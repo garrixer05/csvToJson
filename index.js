@@ -1,8 +1,12 @@
 const dotenv = require('dotenv');
-const fs = require('fs')
+const fs = require('fs');
+const pool = require('./databasePg.js')
 dotenv.config();
 
+
+// Using readstream to handle large csv files
 const stream = fs.createReadStream(process.env.PATH_TO_CSV);
+const RESULTS = [];
 
 function setThis(prop){
     this[prop] = {};
@@ -30,7 +34,7 @@ function createModel(data){
             bag+=`[formattedProperty[${i}]]`;
         }
     }
-    return doc
+    return doc;
 }
 // fill data inside the document 
 function fillData(doc, data){
@@ -40,13 +44,58 @@ function fillData(doc, data){
         for (let j=0;j<dataLine.length;j++){
             eval(`doc.${properLine[j]} = dataLine[j]`);
         }
+        RESULTS.push(doc)
     }
-    return doc;
+}
+function insertToDb (){
+    let count = {
+        in:0,
+        out:0,
+        errors:0
+    }
+    if(!RESULTS.length){
+        console.log('NO docs to insert');
+        return count
+    }
+    for (let doc of RESULTS){
+        let {name, age, address, gender} = doc;
+        let fullname = name.firstName + " " + name.lastName;
+        let additional_info = {
+            "gender" : gender
+        }
+        count.in++;
+        pool.query(`INSERT INTO public.users(name,age,address,additional_info) values('${fullname}', ${age}, '${JSON.stringify(address)}', '${JSON.stringify(additional_info)}')`, (err, res)=>{
+            if(err){
+                count.errors++
+                console.log(err.message);
+            }else{
+                count.out++;
+            }
+            console.log(res.rows);
+        });
+
+    }
+    
+    console.log(count);
+}
+function displayDataByAge(){
+    let query = "SELECT CASE WHEN age BETWEEN 0 AND 20 THEN '<20' WHEN age BETWEEN 20 AND 40 THEN '20-40' WHEN age BETWEEN 40 AND 60 THEN '40-60' WHEN age > 60 THEN '>60' END AS age_group, round(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM public.users)) AS percentage_of_people FROM public.users GROUP BY age_group ORDER BY age_group;"
+    pool.query(query, (err,res)=>{
+        if(err){
+            console.log(err);
+        }
+        console.log(res.rows);
+    })
 }
 
 
-stream.on('data', (chunks)=>{
-    let data = chunks.toString().split('\n');
-    let doc = createModel(data[0]);
-    fillData(doc, data);
-})
+stream.on('data',async (chunks)=>{
+    // let data = chunks.toString().split('\n');
+    // let docModel = createModel(data[0]);
+    // fillData(docModel, data);
+    // insertToDb()
+    displayDataByAge();
+    stream.close();
+});
+
+
