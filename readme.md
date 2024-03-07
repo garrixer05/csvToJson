@@ -5,3 +5,4 @@
 ### For inserting the data to database
 ###### Run databasePg.js first to create the table and avoid the errors
 ###### Now run node index.js. You can comment the other functions in the stream(on) event to display the data which was required in assignment
+#### You can extract the parsed data from the array named as PARSED_DATA

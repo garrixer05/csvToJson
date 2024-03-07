@@ -6,7 +6,7 @@ dotenv.config();
 
 // Using readstream to handle large csv files
 const stream = fs.createReadStream(process.env.PATH_TO_CSV);
-const RESULTS = [];
+const PARSED_DATA = [];
 
 function setThis(prop){
     this[prop] = {};
@@ -44,7 +44,7 @@ function fillData(doc, data){
         for (let j=0;j<dataLine.length;j++){
             eval(`doc.${properLine[j]} = dataLine[j]`);
         }
-        RESULTS.push(doc)
+        PARSED_DATA.push(doc)
     }
 }
 function insertToDb (){
@@ -53,11 +53,11 @@ function insertToDb (){
         out:0,
         errors:0
     }
-    if(!RESULTS.length){
+    if(!PARSED_DATA.length){
         console.log('NO docs to insert');
         return count
     }
-    for (let doc of RESULTS){
+    for (let doc of PARSED_DATA){
         let {name, age, address, gender} = doc;
         let fullname = name.firstName + " " + name.lastName;
         let additional_info = {
