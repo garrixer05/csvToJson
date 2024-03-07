@@ -90,10 +90,10 @@ function displayDataByAge(){
 
 
 stream.on('data',async (chunks)=>{
-    // let data = chunks.toString().split('\n');
-    // let docModel = createModel(data[0]);
-    // fillData(docModel, data);
-    // insertToDb()
+    let data = chunks.toString().split('\n');
+    let docModel = createModel(data[0]);
+    fillData(docModel, data);
+    insertToDb()
     displayDataByAge();
     stream.close();
 });
